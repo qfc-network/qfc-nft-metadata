@@ -59,5 +59,7 @@ export function cidToUrl(cid: string): string {
 }
 
 export function cidToGatewayUrl(cid: string): string {
-  return `https://gateway.pinata.cloud/ipfs/${cid}`;
+  const gateway =
+    process.env.PINATA_GATEWAY || "https://gateway.pinata.cloud";
+  return `${gateway.replace(/\/+$/, "")}/ipfs/${cid}`;
 }

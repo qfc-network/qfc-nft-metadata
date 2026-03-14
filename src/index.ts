@@ -8,8 +8,12 @@ import { generateMetadata, getValidSpecies } from "./generator";
 import { ERC721Metadata, GenerateRequest } from "./types";
 
 const app = express();
-const upload = multer({ storage: multer.memoryStorage() });
-const PORT = process.env.PORT || 3285;
+const MAX_FILE_SIZE = parseInt(process.env.MAX_FILE_SIZE || "10485760", 10);
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: MAX_FILE_SIZE },
+});
+const PORT = process.env.PORT || 3280;
 
 app.use(express.json());
 
@@ -141,9 +145,24 @@ app.get("/metadata/:cid", async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`QFC NFT Metadata Service running on port ${PORT}`);
   console.log(`Mock IPFS: ${process.env.USE_MOCK_IPFS !== "false"}`);
 });
+
+function gracefulShutdown(signal: string): void {
+  console.log(`Received ${signal}, shutting down gracefully...`);
+  server.close(() => {
+    console.log("Server closed.");
+    process.exit(0);
+  });
+  setTimeout(() => {
+    console.error("Forced shutdown after timeout.");
+    process.exit(1);
+  }, 10_000);
+}
+
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));
 
 export default app;
